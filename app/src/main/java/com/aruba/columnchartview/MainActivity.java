@@ -24,13 +24,14 @@ public class MainActivity extends AppCompatActivity {
         items.add(new ColumnChartView.Item("01/06", 45));
         items.add(new ColumnChartView.Item("01/07", 55));
         items.add(new ColumnChartView.Item("01/08", 66));
-
-        List<ColumnChartView.ItemY> itemys = new ArrayList<>();
-        itemys.add(new ColumnChartView.ItemY("10"));
-        itemys.add(new ColumnChartView.ItemY("30"));
-        itemys.add(new ColumnChartView.ItemY("50"));
-        itemys.add(new ColumnChartView.ItemY("70"));
-        itemys.add(new ColumnChartView.ItemY("90"));
-        clv_test.initItems(items, itemys);
+        items.add(new ColumnChartView.Item("01/09", 27));
+        items.add(new ColumnChartView.Item("01/10", 37));
+        items.add(new ColumnChartView.Item("01/11", 47));
+        items.add(new ColumnChartView.Item("01/12", 57));
+        items.add(new ColumnChartView.Item("01/13", 67));
+        
+        clv_test.setStep_y(15);
+        clv_test.setAnime(true);
+        clv_test.initItems(items, 90);
     }
 }

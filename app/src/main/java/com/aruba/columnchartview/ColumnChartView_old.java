@@ -1,21 +1,14 @@
 package com.aruba.columnchartview;
 
-import android.animation.ValueAnimator;
 import android.content.Context;
-import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.LinearGradient;
 import android.graphics.Paint;
-import android.graphics.Rect;
-import android.graphics.RectF;
 import android.graphics.Shader;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
-import android.util.Log;
-import android.view.MotionEvent;
 import android.view.View;
-import android.view.animation.LinearInterpolator;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,11 +16,10 @@ import java.util.List;
 /**
  * 柱状图表
  * Created by aruba on 2018/3/9.
+ * 
+ * @deprecated 
  */
-
-public class ColumnChartView extends View {
-    public static final String TAG = ColumnChartView.class.getSimpleName();
-
+public class ColumnChartView_old extends View {
     private float maxValue = 110;
     private List<Item> items = new ArrayList<>();
     private List<ItemY> itemys = new ArrayList<>();
@@ -66,17 +58,16 @@ public class ColumnChartView extends View {
      */
     private int[] colorGradient = new int[]{0xFF78f7ff, 0xFF007991};
 
-    private int showItemSize = 8;
 
-    public ColumnChartView(Context context) {
+    public ColumnChartView_old(Context context) {
         this(context, null);
     }
 
-    public ColumnChartView(Context context, @Nullable AttributeSet attrs) {
+    public ColumnChartView_old(Context context, @Nullable AttributeSet attrs) {
         this(context, attrs, 0);
     }
 
-    public ColumnChartView(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
+    public ColumnChartView_old(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
 
         axisPaint = new Paint();
@@ -98,28 +89,26 @@ public class ColumnChartView extends View {
         columnTextPaint.setTextSize(Tools.dpToPx(context, 10));
     }
 
-    public void setX_describe(String x_describe) {
-        this.x_describe = x_describe;
-    }
-
-    public void setY_describe(String y_describe) {
-        this.y_describe = y_describe;
+    public int getStep_y() {
+        return step_y;
     }
 
     public void setStep_y(int step_y) {
         this.step_y = step_y;
     }
 
-    public void initItems(List<Item> items, float max_value) {
+    public void initItems(List<Item> items, int start_value, float max_value) {
         this.items.clear();
         this.items.addAll(items);
         this.itemys.clear();
 
         //计算Y轴的item数
-        int count = (int) (max_value / step_y);
+        int count = (int) ((max_value - start_value) / step_y);
+        //加入起始点
+        this.itemys.add(new ItemY(start_value + ""));
         //加入后面的点
         for (int i = 1; i < count + 1; i++) {
-            this.itemys.add(new ItemY(step_y * i + ""));
+            this.itemys.add(new ItemY(start_value + step_y * i + ""));
         }
 
         int max_y_distance = 0;
@@ -137,72 +126,9 @@ public class ColumnChartView extends View {
         //加上预留的一个 Y轴最大值 = 最后一个值 + 步长
         maxValue += step_y;
 
-        if (anime) {
-            startAnime();
-        } else {
-            postInvalidate();
-        }
+        postInvalidate();
     }
 
-    private boolean anime;
-
-    public void setAnime(boolean anime) {
-        this.anime = anime;
-    }
-
-    private float progress;
-
-    /**
-     * 柱状渲染的动画
-     */
-    private void startAnime() {
-        ValueAnimator valueAnimator = ValueAnimator.ofFloat(1);
-        valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-            @Override
-            public void onAnimationUpdate(ValueAnimator animation) {
-                progress = (float) animation.getAnimatedValue();
-
-                postInvalidate();
-            }
-        });
-        valueAnimator.setDuration(1000);
-        valueAnimator.setInterpolator(new LinearInterpolator());
-
-        valueAnimator.start();
-    }
-
-    private float currentX;
-    private float scrollX;
-    private float max_scrollX;
-
-    @Override
-    public boolean onTouchEvent(MotionEvent event) {
-        //记录手指X平移
-        switch (event.getAction()) {
-            case MotionEvent.ACTION_DOWN: {
-                currentX = event.getX();
-                break;
-            }
-            case MotionEvent.ACTION_MOVE: {
-                float x2 = event.getX();
-
-                scrollX += x2 - currentX;
-
-                if (scrollX > 0) {
-                    scrollX = 0;
-                } else if (Math.abs(scrollX) > max_scrollX) {
-                    scrollX = -max_scrollX;
-                } else {
-                    postInvalidate();
-                }
-
-                currentX = x2;
-            }
-            break;
-        }
-
-        return true;
-    }
 
     @Override
     protected void onDraw(Canvas canvas) {
@@ -241,54 +167,32 @@ public class ColumnChartView extends View {
             float endX = getMeasuredWidth() - x_describe_padding;
 
             //每个刻度的距离
-            float disX = (endX - startX) / ((items.size() > showItemSize ? showItemSize : items.size()) + 1);
+            float disX = (endX - startX) / (items.size() + 1);
 
             Paint.FontMetrics columnPaintFontMetrics = columnPaint.getFontMetrics();
             float columnPaintHeight = (columnPaintFontMetrics.bottom - columnPaintFontMetrics.top);
             float columnPaintBaseline = (columnPaintFontMetrics.bottom - columnPaintFontMetrics.top) / 2 - columnPaintFontMetrics.bottom;
-
-            //数据区bitmap
-            Bitmap bufferBitmap = Bitmap.createBitmap(getMeasuredWidth(), getMeasuredHeight(), Bitmap.Config.ARGB_8888);//创建内存位图 
-            Canvas cacheCanvas = new Canvas(bufferBitmap);//创建绘图画布  
-
-            //画item X坐标描述 只画显示的柱状
-            int startIndex = (int) (Math.abs(scrollX) / disX);
-            Log.i(TAG, "startIndex :" + startIndex);
-            for (int i = startIndex < 1 ? 0 : startIndex - 1; i < items.size() && i < startIndex + showItemSize + 1; i++) {
+            //画item X坐标描述
+            for (int i = 0; i < items.size(); i++) {
                 float textWidth = axisPaint.measureText(items.get(i).describe_X);
                 //- axis_padding /2 为稍微往前偏移点，美观
                 float x = startX + disX * (i + 1) - axis_padding / 2;
                 float y = getMeasuredHeight() - axis_x_padding_distance / 2 + baseline;
-                cacheCanvas.drawText(items.get(i).describe_X, x - textWidth / 2 + scrollX, y, axisPaint);
+                canvas.drawText(items.get(i).describe_X, x - textWidth / 2, y, axisPaint);
 
                 //顺便把柱状也画了
-                float height = (startY - endY) * items.get(i).value / maxValue;
-                float column_height = endY + height * progress;
-                LinearGradient linearGradient = new LinearGradient(x - columnWidth / 2 + scrollX, endY,
-                        x + columnWidth / 2 + scrollX, column_height, colorGradient, null, Shader.TileMode.CLAMP);
+                float height = (startY - endY) * items.get(i).value / maxValue - baseline;
+                LinearGradient linearGradient = new LinearGradient(x - columnWidth / 2, endY, x + columnWidth / 2, endY + height, colorGradient, null, Shader.TileMode.CLAMP);
                 columnPaint.setShader(linearGradient);
-                cacheCanvas.drawLine(x + scrollX, endY, x + scrollX, column_height, columnPaint);
+                canvas.drawLine(x, endY, x, endY + height, columnPaint);
 
                 //画值
                 float columnTextWidth = columnTextPaint.measureText((int) items.get(i).value + "");
-                LinearGradient mLinearGradient = new LinearGradient(x - columnTextWidth / 2 + scrollX,
-                        endY + height * progress - columnPaintHeight,
-                        x + columnTextWidth / 2 + scrollX,
-                        endY + height - columnPaintHeight + columnPaintBaseline, colorGradient, null, Shader.TileMode.CLAMP);
+                LinearGradient mLinearGradient = new LinearGradient(x - columnTextWidth / 2, endY + height - columnPaintHeight,
+                        x + columnTextWidth / 2, endY + height - columnPaintHeight + columnPaintBaseline, colorGradient, null, Shader.TileMode.CLAMP);
                 columnTextPaint.setShader(mLinearGradient);
-                cacheCanvas.drawText((int) items.get(i).value + "",
-                        x - columnTextWidth / 2 + scrollX,
-                        endY + height * progress - columnPaintHeight + columnPaintBaseline,
-                        columnTextPaint);
+                canvas.drawText((int) items.get(i).value + "", x - columnTextWidth / 2, endY + height - columnPaintHeight + columnPaintBaseline, columnTextPaint);
             }
-
-            ImageCache.getInstance().addBitmapToMemoryCache(String.valueOf(getId()), bufferBitmap);
-
-            //clip bitmap
-            max_scrollX = disX * (items.size() - showItemSize);
-            Rect src = new Rect((int) startX, 0, (int) (endX - disX + axis_padding), getMeasuredHeight());
-            RectF dst = new RectF((int) startX, 0, (int) (endX - disX + axis_padding), getMeasuredHeight());
-            canvas.drawBitmap(bufferBitmap, src, dst, axisPaint);
 
             //后画坐标，防止柱状遮挡
 
