@@ -12,7 +12,6 @@ import android.graphics.RectF;
 import android.graphics.Shader;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.LinearInterpolator;
@@ -68,6 +67,8 @@ public class ColumnChartView extends View {
 
     private int showItemSize = 8;
 
+    private String id;
+
     public ColumnChartView(Context context) {
         this(context, null);
     }
@@ -78,6 +79,8 @@ public class ColumnChartView extends View {
 
     public ColumnChartView(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
+
+        id = String.valueOf(getId());
 
         axisPaint = new Paint();
         axisPaint.setAntiAlias(true);
@@ -110,6 +113,10 @@ public class ColumnChartView extends View {
         this.step_y = step_y;
     }
 
+    /**
+     * @param items     柱状元素集合
+     * @param max_value 最大值(Y轴)
+     */
     public void initItems(List<Item> items, float max_value) {
         this.items.clear();
         this.items.addAll(items);
@@ -204,6 +211,8 @@ public class ColumnChartView extends View {
         return true;
     }
 
+    private final String start_y_des = "  0";
+
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
@@ -230,7 +239,7 @@ public class ColumnChartView extends View {
             float disY = (startY - endY) / (itemys.size() + 1);
 
             //画0
-            canvas.drawText("  0", axis_padding / 2, endY + baseline, axisPaint);
+            canvas.drawText(start_y_des, axis_padding / 2, endY + baseline, axisPaint);
             //画item Y坐标描述
             for (int i = 0; i < itemys.size(); i++) {
                 canvas.drawText(itemys.get(i).describe_Y, axis_padding / 2, endY + disY * (i + 1) + baseline, axisPaint);
@@ -253,7 +262,6 @@ public class ColumnChartView extends View {
 
             //画item X坐标描述 只画显示的柱状
             int startIndex = (int) (Math.abs(scrollX) / disX);
-            Log.i(TAG, "startIndex :" + startIndex);
             for (int i = startIndex < 1 ? 0 : startIndex - 1; i < items.size() && i < startIndex + showItemSize + 1; i++) {
                 float textWidth = axisPaint.measureText(items.get(i).describe_X);
                 //- axis_padding /2 为稍微往前偏移点，美观
@@ -270,25 +278,27 @@ public class ColumnChartView extends View {
                 cacheCanvas.drawLine(x + scrollX, endY, x + scrollX, column_height, columnPaint);
 
                 //画值
-                float columnTextWidth = columnTextPaint.measureText((int) items.get(i).value + "");
+                String value = String.valueOf((int) items.get(i).value);
+                float columnTextWidth = columnTextPaint.measureText(value);
                 LinearGradient mLinearGradient = new LinearGradient(x - columnTextWidth / 2 + scrollX,
                         endY + height * progress - columnPaintHeight,
                         x + columnTextWidth / 2 + scrollX,
                         endY + height - columnPaintHeight + columnPaintBaseline, colorGradient, null, Shader.TileMode.CLAMP);
                 columnTextPaint.setShader(mLinearGradient);
-                cacheCanvas.drawText((int) items.get(i).value + "",
+                cacheCanvas.drawText(value,
                         x - columnTextWidth / 2 + scrollX,
                         endY + height * progress - columnPaintHeight + columnPaintBaseline,
                         columnTextPaint);
             }
 
-            ImageCache.getInstance().addBitmapToMemoryCache(String.valueOf(getId()), bufferBitmap);
+//            ImageCache.getInstance().addBitmapToMemoryCache(id, bufferBitmap);
 
             //clip bitmap
             max_scrollX = disX * (items.size() - showItemSize);
             Rect src = new Rect((int) startX, 0, (int) (endX - disX + axis_padding), getMeasuredHeight());
             RectF dst = new RectF((int) startX, 0, (int) (endX - disX + axis_padding), getMeasuredHeight());
             canvas.drawBitmap(bufferBitmap, src, dst, axisPaint);
+            bufferBitmap.recycle();
 
             //后画坐标，防止柱状遮挡
 
