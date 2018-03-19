@@ -64,8 +64,10 @@ public class ColumnChartView extends View {
      * 渲染渐变值
      */
     private int[] colorGradient = new int[]{0xFF78f7ff, 0xFF007991};
-
-    private int showItemSize = 8;
+    /**
+     * 默认屏幕上显示的item数
+     */
+    private int showItemSize = 7;
 
     private String id;
 
@@ -157,7 +159,7 @@ public class ColumnChartView extends View {
         this.anime = anime;
     }
 
-    private float progress;
+    private float progress = 1;
 
     /**
      * 柱状渲染的动画
@@ -216,46 +218,46 @@ public class ColumnChartView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        canvas.drawColor(Color.BLACK);
+
+        //横线
+        int x_describe_padding = (int) (axisPaint.measureText(x_describe) + axis_padding);
+
+        //竖线
+        int y_describe_padding = (int) (axis_x_padding_distance + axis_padding / 2);
+
+        Paint.FontMetrics fontMetrics = axisPaint.getFontMetrics();
+        float baseline = (fontMetrics.bottom - fontMetrics.top) / 2 - fontMetrics.bottom;
+        //画Y轴描述
+        canvas.drawText(y_describe, axis_y_padding_distance - axisPaint.measureText(y_describe) / 2, y_describe_padding / 2 + baseline, axisPaint);
+        //画X轴描述
+        canvas.drawText(x_describe, getMeasuredWidth() - x_describe_padding + axis_padding / 2, getMeasuredHeight() - axis_x_padding_distance + baseline, axisPaint);
+
+        //Y轴的起始点（上）与结束点（下）
+        float startY = y_describe_padding;
+        float endY = getMeasuredHeight() - axis_x_padding_distance;
+
+        //每个刻度的距离
+        float disY = (startY - endY) / (itemys.size() + 1);
+
+        //画0
+        canvas.drawText(start_y_des, axis_padding / 2, endY + baseline, axisPaint);
+        //画item Y坐标描述
+        for (int i = 0; i < itemys.size(); i++) {
+            canvas.drawText(itemys.get(i).describe_Y, axis_padding / 2, endY + disY * (i + 1) + baseline, axisPaint);
+        }
+
+        //X轴的起始点（左）与结束点（右）
+        float startX = axis_y_padding_distance;
+        float endX = getMeasuredWidth() - x_describe_padding;
+
+        //每个刻度的距离
+        float disX = (endX - startX) / ((items.size() > showItemSize ? showItemSize : items.size()) + 1);
+
+        Paint.FontMetrics columnPaintFontMetrics = columnPaint.getFontMetrics();
+        float columnPaintHeight = (columnPaintFontMetrics.bottom - columnPaintFontMetrics.top);
+        float columnPaintBaseline = (columnPaintFontMetrics.bottom - columnPaintFontMetrics.top) / 2 - columnPaintFontMetrics.bottom;
+
         if (items.size() > 0) {
-            //横线
-            int x_describe_padding = (int) (axisPaint.measureText(x_describe) + axis_padding);
-
-            //竖线
-            int y_describe_padding = (int) (axis_x_padding_distance + axis_padding / 2);
-
-            Paint.FontMetrics fontMetrics = axisPaint.getFontMetrics();
-            float baseline = (fontMetrics.bottom - fontMetrics.top) / 2 - fontMetrics.bottom;
-            //画Y轴描述
-            canvas.drawText(y_describe, axis_y_padding_distance - axisPaint.measureText(y_describe) / 2, y_describe_padding / 2 + baseline, axisPaint);
-            //画X轴描述
-            canvas.drawText(x_describe, getMeasuredWidth() - x_describe_padding + axis_padding / 2, getMeasuredHeight() - axis_x_padding_distance + baseline, axisPaint);
-
-            //Y轴的起始点（上）与结束点（下）
-            float startY = y_describe_padding;
-            float endY = getMeasuredHeight() - axis_x_padding_distance;
-
-            //每个刻度的距离
-            float disY = (startY - endY) / (itemys.size() + 1);
-
-            //画0
-            canvas.drawText(start_y_des, axis_padding / 2, endY + baseline, axisPaint);
-            //画item Y坐标描述
-            for (int i = 0; i < itemys.size(); i++) {
-                canvas.drawText(itemys.get(i).describe_Y, axis_padding / 2, endY + disY * (i + 1) + baseline, axisPaint);
-            }
-
-            //X轴的起始点（左）与结束点（右）
-            float startX = axis_y_padding_distance;
-            float endX = getMeasuredWidth() - x_describe_padding;
-
-            //每个刻度的距离
-            float disX = (endX - startX) / ((items.size() > showItemSize ? showItemSize : items.size()) + 1);
-
-            Paint.FontMetrics columnPaintFontMetrics = columnPaint.getFontMetrics();
-            float columnPaintHeight = (columnPaintFontMetrics.bottom - columnPaintFontMetrics.top);
-            float columnPaintBaseline = (columnPaintFontMetrics.bottom - columnPaintFontMetrics.top) / 2 - columnPaintFontMetrics.bottom;
-
             //数据区bitmap
             Bitmap bufferBitmap = Bitmap.createBitmap(getMeasuredWidth(), getMeasuredHeight(), Bitmap.Config.ARGB_8888);//创建内存位图 
             Canvas cacheCanvas = new Canvas(bufferBitmap);//创建绘图画布  
@@ -299,35 +301,34 @@ public class ColumnChartView extends View {
             RectF dst = new RectF((int) startX, 0, (int) (endX - disX + axis_padding), getMeasuredHeight());
             canvas.drawBitmap(bufferBitmap, src, dst, axisPaint);
             bufferBitmap.recycle();
-
-            //后画坐标，防止柱状遮挡
-
-            //竖线
-            canvas.drawLine(axis_y_padding_distance, getMeasuredHeight() - axis_x_padding_distance,
-                    axis_y_padding_distance, y_describe_padding,
-                    axisPaint);
-            //箭头左边部分
-            canvas.drawLine(axis_y_padding_distance - axis_padding / 2, y_describe_padding + axis_padding / 2,
-                    axis_y_padding_distance, y_describe_padding,
-                    axisPaint);
-            //箭头右边部分
-            canvas.drawLine(axis_y_padding_distance + axis_padding / 2, y_describe_padding + axis_padding / 2,
-                    axis_y_padding_distance, y_describe_padding,
-                    axisPaint);
-
-            //横线
-            canvas.drawLine(axis_y_padding_distance, getMeasuredHeight() - axis_x_padding_distance,
-                    getMeasuredWidth() - x_describe_padding, getMeasuredHeight() - axis_x_padding_distance,
-                    axisPaint);
-            //箭头上边部分
-            canvas.drawLine(getMeasuredWidth() - x_describe_padding - axis_padding / 2, getMeasuredHeight() - axis_x_padding_distance - axis_padding / 2,
-                    getMeasuredWidth() - x_describe_padding, getMeasuredHeight() - axis_x_padding_distance,
-                    axisPaint);
-            //箭头下边部分
-            canvas.drawLine(getMeasuredWidth() - x_describe_padding - axis_padding / 2, getMeasuredHeight() - axis_x_padding_distance + axis_padding / 2,
-                    getMeasuredWidth() - x_describe_padding, getMeasuredHeight() - axis_x_padding_distance,
-                    axisPaint);
         }
+        //后画坐标，防止柱状遮挡
+
+        //竖线
+        canvas.drawLine(axis_y_padding_distance, getMeasuredHeight() - axis_x_padding_distance,
+                axis_y_padding_distance, y_describe_padding,
+                axisPaint);
+        //箭头左边部分
+        canvas.drawLine(axis_y_padding_distance - axis_padding / 2, y_describe_padding + axis_padding / 2,
+                axis_y_padding_distance, y_describe_padding,
+                axisPaint);
+        //箭头右边部分
+        canvas.drawLine(axis_y_padding_distance + axis_padding / 2, y_describe_padding + axis_padding / 2,
+                axis_y_padding_distance, y_describe_padding,
+                axisPaint);
+
+        //横线
+        canvas.drawLine(axis_y_padding_distance, getMeasuredHeight() - axis_x_padding_distance,
+                getMeasuredWidth() - x_describe_padding, getMeasuredHeight() - axis_x_padding_distance,
+                axisPaint);
+        //箭头上边部分
+        canvas.drawLine(getMeasuredWidth() - x_describe_padding - axis_padding / 2, getMeasuredHeight() - axis_x_padding_distance - axis_padding / 2,
+                getMeasuredWidth() - x_describe_padding, getMeasuredHeight() - axis_x_padding_distance,
+                axisPaint);
+        //箭头下边部分
+        canvas.drawLine(getMeasuredWidth() - x_describe_padding - axis_padding / 2, getMeasuredHeight() - axis_x_padding_distance + axis_padding / 2,
+                getMeasuredWidth() - x_describe_padding, getMeasuredHeight() - axis_x_padding_distance,
+                axisPaint);
 
     }
 
