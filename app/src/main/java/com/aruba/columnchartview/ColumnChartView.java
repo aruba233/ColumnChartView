@@ -14,6 +14,7 @@ import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewParent;
 import android.view.animation.LinearInterpolator;
 
 import java.util.ArrayList;
@@ -92,6 +93,10 @@ public class ColumnChartView extends View {
         axisTextSize = Tools.dpToPx(context, 10);
         axis_padding = Tools.dpToPx(context, 10);
         axisPaint.setTextSize(axisTextSize);
+
+        Paint.FontMetrics fontMetrics = axisPaint.getFontMetrics();
+        axis_y_padding_distance = (int) (axisPaint.measureText("99") + axis_padding);
+        axis_x_padding_distance = (int) (fontMetrics.bottom - fontMetrics.top) + axis_padding;
 
         columnPaint = new Paint();
         columnPaint.setAntiAlias(true);
@@ -180,6 +185,13 @@ public class ColumnChartView extends View {
         valueAnimator.start();
     }
 
+    // 是否拦截触摸事件
+    private boolean interceptTouchEvent = false;
+
+    public void setInterceptTouchEvent(boolean interceptTouchEvent) {
+        this.interceptTouchEvent = interceptTouchEvent;
+    }
+
     private float currentX;
     private float scrollX;
     private float max_scrollX;
@@ -190,6 +202,13 @@ public class ColumnChartView extends View {
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN: {
                 currentX = event.getX();
+                if (interceptTouchEvent) {
+                    ViewParent parent = getParent();
+                    while (parent != null) {
+                        parent.requestDisallowInterceptTouchEvent(true);
+                        parent = parent.getParent();
+                    }
+                }
                 break;
             }
             case MotionEvent.ACTION_MOVE: {
@@ -213,7 +232,7 @@ public class ColumnChartView extends View {
         return true;
     }
 
-    private final String start_y_des = "  0";
+    private final String start_y_des = "0";
 
     @Override
     protected void onDraw(Canvas canvas) {
@@ -228,7 +247,8 @@ public class ColumnChartView extends View {
         Paint.FontMetrics fontMetrics = axisPaint.getFontMetrics();
         float baseline = (fontMetrics.bottom - fontMetrics.top) / 2 - fontMetrics.bottom;
         //画Y轴描述
-        canvas.drawText(y_describe, axis_y_padding_distance - axisPaint.measureText(y_describe) / 2, y_describe_padding / 2 + baseline, axisPaint);
+        float y_describe_X = axis_y_padding_distance - axisPaint.measureText(y_describe) / 2;
+        canvas.drawText(y_describe, y_describe_X < 0 ? 0 : y_describe_X, y_describe_padding / 2 + baseline, axisPaint);
         //画X轴描述
         canvas.drawText(x_describe, getMeasuredWidth() - x_describe_padding + axis_padding / 2, getMeasuredHeight() - axis_x_padding_distance + baseline, axisPaint);
 
@@ -240,10 +260,10 @@ public class ColumnChartView extends View {
         float disY = (startY - endY) / (itemys.size() + 1);
 
         //画0
-        canvas.drawText(start_y_des, axis_padding / 2, endY + baseline, axisPaint);
+        canvas.drawText(start_y_des, axis_y_padding_distance - axisPaint.measureText(start_y_des) - axis_padding / 2, endY + baseline, axisPaint);
         //画item Y坐标描述
         for (int i = 0; i < itemys.size(); i++) {
-            canvas.drawText(itemys.get(i).describe_Y, axis_padding / 2, endY + disY * (i + 1) + baseline, axisPaint);
+            canvas.drawText(itemys.get(i).describe_Y, axis_y_padding_distance - axisPaint.measureText(itemys.get(i).describe_Y) - axis_padding / 2, endY + disY * (i + 1) + baseline, axisPaint);
         }
 
         //X轴的起始点（左）与结束点（右）
