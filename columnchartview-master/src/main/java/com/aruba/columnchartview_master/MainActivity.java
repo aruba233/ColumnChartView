@@ -24,7 +24,6 @@ public class MainActivity extends AppCompatActivity {
             items.add(new ColumnChartView.Item("01/" + (i < 10 ? "0" + i : i), new Random().nextInt(90)));
         }
 
-        clv_test.setStep_y(15);
         clv_test.setAnime(true);
         clv_test.initItems(items, 90);
     }

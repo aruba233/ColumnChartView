@@ -28,11 +28,17 @@ import java.util.List;
 public class ColumnChartView extends View {
     public static final String TAG = ColumnChartView.class.getSimpleName();
 
-    private float maxValue = 110;
+    /**
+     * y轴最小值
+     */
+    private float minValue = 90;
+    private float maxValue = minValue;
     private List<Item> items = new ArrayList<>();
     private List<ItemY> itemys = new ArrayList<>();
     //Y轴步长
-    private int step_y = 20;
+    private int step_y = 15;
+    //Y轴显示元素数
+    private int showItemYCount = 6;
     private Paint axisPaint;
     private Paint columnPaint;
     private Paint columnTextPaint;
@@ -70,8 +76,6 @@ public class ColumnChartView extends View {
      */
     private int showItemSize = 7;
 
-    private String id;
-
     public ColumnChartView(Context context) {
         this(context, null);
     }
@@ -82,8 +86,6 @@ public class ColumnChartView extends View {
 
     public ColumnChartView(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-
-        id = String.valueOf(getId());
 
         axisPaint = new Paint();
         axisPaint.setAntiAlias(true);
@@ -116,21 +118,41 @@ public class ColumnChartView extends View {
         this.y_describe = y_describe;
     }
 
-    public void setStep_y(int step_y) {
-        this.step_y = step_y;
+    public void setMinValue(float minValue) {
+        this.minValue = minValue;
+    }
+
+    public void setShowItemYCount(int showItemYCount) {
+        this.showItemYCount = showItemYCount;
     }
 
     /**
      * @param items     柱状元素集合
-     * @param max_value 最大值(Y轴)
+     * @param max_value 最大值(Y轴) 自动计算可以整除的值（向上取第一个能被Y轴元素数整除的值），不会显示小数
      */
     public void initItems(List<Item> items, float max_value) {
+        if (max_value > minValue) {//大于最小值
+            //满足被6整除
+            int isModZero = ((int) Math.ceil(max_value) % showItemYCount);
+            if (isModZero != 0) {
+                max_value = showItemYCount * (max_value / showItemYCount + 1);
+            }
+
+            //设置步长 步长 = 最大销售数 / Y轴元素数 
+            step_y = (int) (max_value / showItemYCount);
+
+            maxValue = max_value;
+        } else {
+            maxValue = minValue;
+        }
+
+
         this.items.clear();
         this.items.addAll(items);
         this.itemys.clear();
 
         //计算Y轴的item数
-        int count = (int) (max_value / step_y);
+        int count = (int) (maxValue / step_y);
         //加入后面的点
         for (int i = 1; i < count + 1; i++) {
             this.itemys.add(new ItemY(step_y * i + ""));
@@ -146,8 +168,6 @@ public class ColumnChartView extends View {
         axis_y_padding_distance = max_y_distance + axis_padding;
         axis_x_padding_distance = (int) (fontMetrics.bottom - fontMetrics.top) + axis_padding;
 
-        //获取最后一个值(即Y轴最大值)
-        maxValue = max_value;
         //加上预留的一个 Y轴最大值 = 最后一个值 + 步长
         maxValue += step_y;
 
