@@ -70,7 +70,7 @@ public class ColumnChartView extends View {
     /**
      * 渲染渐变值
      */
-    private int[] colorGradient = new int[]{0xFF78f7ff, 0xFF007991};
+    private int[] colorGradient = new int[]{0xFF007991, 0xFF007991,0xFF78f7ff};
     /**
      * 默认屏幕上显示的item数
      */
@@ -108,6 +108,19 @@ public class ColumnChartView extends View {
         columnTextPaint = new Paint();
         columnTextPaint.setAntiAlias(true);
         columnTextPaint.setTextSize(Tools.dpToPx(context, 10));
+        columnTextPaint.setColor(Color.parseColor("#c1ebef"));
+    }
+
+    public Paint getColumnPaint() {
+        return columnPaint;
+    }
+
+    public Paint getColumnTextPaint() {
+        return columnTextPaint;
+    }
+
+    public void setColorGradient(int[] colorGradient) {
+        this.colorGradient = colorGradient;
     }
 
     public void setX_describe(String x_describe) {
@@ -314,19 +327,18 @@ public class ColumnChartView extends View {
                 //顺便把柱状也画了
                 float height = (startY - endY) * items.get(i).value / maxValue;
                 float column_height = endY + height * progress;
-                LinearGradient linearGradient = new LinearGradient(x - columnWidth / 2 + scrollX, endY,
-                        x + columnWidth / 2 + scrollX, column_height, colorGradient, null, Shader.TileMode.CLAMP);
+                LinearGradient linearGradient = new LinearGradient(x + scrollX, endY, x + scrollX, column_height, colorGradient, null, Shader.TileMode.CLAMP);
                 columnPaint.setShader(linearGradient);
                 cacheCanvas.drawLine(x + scrollX, endY, x + scrollX, column_height, columnPaint);
 
                 //画值
                 String value = String.valueOf((int) items.get(i).value);
                 float columnTextWidth = columnTextPaint.measureText(value);
-                LinearGradient mLinearGradient = new LinearGradient(x - columnTextWidth / 2 + scrollX,
-                        endY + height * progress - columnPaintHeight,
-                        x + columnTextWidth / 2 + scrollX,
-                        endY + height - columnPaintHeight + columnPaintBaseline, colorGradient, null, Shader.TileMode.CLAMP);
-                columnTextPaint.setShader(mLinearGradient);
+//                LinearGradient mLinearGradient = new LinearGradient(x - columnTextWidth / 2 + scrollX,
+//                        endY + height * progress - columnPaintHeight,
+//                        x + columnTextWidth / 2 + scrollX,
+//                        endY + height - columnPaintHeight + columnPaintBaseline, colorGradient, null, Shader.TileMode.CLAMP);
+//                columnTextPaint.setShader(mLinearGradient);
                 cacheCanvas.drawText(value,
                         x - columnTextWidth / 2 + scrollX,
                         endY + height * progress - columnPaintHeight + columnPaintBaseline,
